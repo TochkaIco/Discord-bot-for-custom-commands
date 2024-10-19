@@ -11,4 +11,4 @@ At the moment, whenever you enter the creation/removal process, the bot stops re
 
 At the moment the bot only saves the commands in a dict, meaning that they'll be erased once the program is being stopped. I plan on using a json file to save the commands later.
 
-The TOKEN for your bot should be placed on the last line where it says ``YOUR TOKEN``. You can get your token on the discord developer portal(https://discord.com/developers/applications).
+The TOKEN for your bot should be placed on the last line where it says ``YOUR TOKEN``. You can get your token on the discord developer portal(https://discord.com/developers/applications). Make sure to enable Privileged Gateway Intents in the ``Bot`` section.
