@@ -1,5 +1,5 @@
 # Discord-bot-for-custom-commands
-This bot allows lets you create custom commands for your server; after being triggered - a message will be sent with a guide, welcome message or something else you set up
+This bot allows lets you create custom commands for your server; after being triggered - a message will be sent with a guide, welcome message or something else you set up.
 
 example: command - ``!welcome``, message - ``Hi and welcome to the server! You can grab roles for your preference in #roles. Please make sure to go through #rules, if you have any questions you can dm @admin.``
 
@@ -9,6 +9,6 @@ Admin users can add/remove commands for their server with ``!add-cmd`` and ``!re
 
 At the moment, whenever you enter the creation/removal process, the bot stops reacting to other users' messages until the process is finished. This means that while you're adding/removing commands, no one will be able trigger bot's commands.
 
-At the moment the bot only saves the commands in a dict, meaning that they'll be erased once the program is being stopped. I plan on using a json file to save the commands later.
+All the commands that are customly created are saved in a json file, although you have to create it manually before starting the bot for the first time.
 
 The TOKEN for your bot should be placed on the last line where it says ``YOUR TOKEN``. You can get your token on the discord developer portal(https://discord.com/developers/applications). Make sure to enable Privileged Gateway Intents in the ``Bot`` section.
