@@ -4,16 +4,34 @@ import json
 
 adminUsers = {}
 adminUsers_server_specific = {}
-
+json_file_name = 'data.json'
 commands_dict = {}
 help_message = "Hi! With this bot you can create new commands that will show you some info when being called.\nFor example you can make it so that the bot will write a guide when ``!guide`` is called.\n\nThese controls are binded to the admin user(s):\nStart by entering ``!add-cmd``, proceeding by entering the desired command and then the information you want to get when the command is triggered.\nWith ``!remove-cmd`` you can remove a command from the dictionary; same procedure.\n\nYou can also look over all of the commands by sending ``!read-all``."
-is_busy = False
+is_busy = False  # Global flag to indicate if the bot is busy
+
+def read_json():
+    global json_file_name
+    global commands_dict
+    try:
+        with open(json_file_name, 'r') as f:
+            commands_dict = json.load(f)
+        f.close()
+    except json.JSONDecodeError as e:
+        print(f"Error reading JSON file: {e}")
+
+def write_json():
+    global json_file_name
+    global commands_dict
+    with open(json_file_name, 'w') as f:
+        json.dump(commands_dict, f)
+    f.close()
 
 class Client(commands.Bot):
     async def on_ready(self):
         print(f'Logged in as {self.user}')
 
     async def read_commands(self, serverID, request_type, message_content, message_channel):
+        read_json()
         global commands_dict
         if str(serverID) not in commands_dict:
             return 'There are currently no commands saved for your server'
@@ -22,17 +40,20 @@ class Client(commands.Bot):
                 command_from_dict = commands_dict[str(serverID)][message_content]['triggered_message']
                 return command_from_dict
             elif request_type=='r_all_a':
+                # print('full dict was sent')
                 return commands_dict
             elif request_type=='r_all':
                 commands_from_server = ''
                 for command in commands_dict[str(serverID)]:
+                    # print(commands_dict)
                     commands_from_server += (f'command: ``{command}``, triggered message: {commands_dict[str(serverID)][command]["triggered_message"]}\n\n')
                 return commands_from_server
                 
-            # else: print('Error: Incorrect request_type for read_commands()')
+            else: print('Error: Incorrect request_type for read_commands()')
 
-    async def add_remove_commands(self, serverID, user_id, request_type, message_channel):
+    async def add_remove_commands(self, serverID, user_id, request_type, message_channel): #request_type specifies whether the command is created or removed
         global is_busy
+        read_json()
         global commands_dict
         is_busy = True
         if request_type=='a':
@@ -43,7 +64,7 @@ class Client(commands.Bot):
                 return m.author.id == user_id and m.channel == message_channel
             
             await message_channel.send('Enter the new command, it should start with ``!``')
-            command_message = await bot.wait_for('message', timeout=30.0, check=check)
+            command_message = await bot.wait_for('message', timeout=30.0, check=check) #FIX THIS
             command = command_message.content
             if not command.startswith('!'):
                 await message_channel.send('The command should start with ``!``\nYou need to start over')
@@ -53,7 +74,7 @@ class Client(commands.Bot):
             new_text_message = await bot.wait_for('message', timeout=60.0, check=check)
             new_text = new_text_message.content
             commands_dict[str(serverID)][command] = {'triggered_message': new_text}
-            if command in commands_dict[str(serverID)] and new_text in commands_dict[str(serverID)][command]:
+            if command in commands_dict[str(serverID)] and new_text in commands_dict[str(serverID)][command]['triggered_message']:
                 await message_channel.send('Command was succesfully created!')
                 is_busy = False
             else:
@@ -78,12 +99,14 @@ class Client(commands.Bot):
                 await message_channel.send('There was no command found with this name')
                 is_busy = False
                 return
+        write_json()
 
 
     async def on_message(self, message):
         if message.author==self.user: return
         elif is_busy: return
         elif message.content.startswith('!'):
+            read_json()
             command = message.content
             # Create a mapping of commands to their actions
             command_actions = {
@@ -99,19 +122,21 @@ class Client(commands.Bot):
                 result = await command_actions[command]()
                 if command == "!read-all-admin" and message.author.id in adminUsers:
                     await message.channel.send(str(result))
-                elif command == "!help" and message.author.id in adminUsers:
-                    await message.channel.send(str(result))
                 elif command == "!read-all" and (message.author.id in adminUsers_server_specific or message.author.id in adminUsers):
                     await message.channel.send(result)
             else:
-                if command in commands_dict[str(message.guild.id)]:
-                    result = await self.read_commands('r_specific', command)
-                    await message.channel.send(str(result))
+                if str(message.guild.id) in commands_dict:
+                    if command in commands_dict[str(message.guild.id)]:
+                        result = await self.read_commands(message.guild.id, 'r_specific', command, message.channel)
+                        await message.channel.send(str(result))
+                    else:
+                        await message.channel.send('There was no command found with this name')
                 else:
-                    await message.channel.send('There was no command found with this name')
+                    await message.channel.send('There are no commands on your server')
+                        
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = Client(command_prefix=";", activity=discord.Game(name="lurking"), intents=intents)
+bot = Client(command_prefix=";", activity=discord.Game(name="testing"), intents=intents)
 
 bot.run('YOUR TOKEN')
